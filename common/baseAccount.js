@@ -11,6 +11,17 @@ var big_integer_1 = __importDefault(require("big-integer"));
 var coin_1 = require("./coin");
 var int_1 = require("./int");
 var buffer_1 = require("buffer/");
+var vestingAccountTypes = [
+  "auth/ContinuousVestingAccount",
+  "auth/DelayedVestingAccount",
+  "auth/PeriodicVestingAccount",
+  "cosmos-sdk/ContinuousVestingAccount",
+  "cosmos-sdk/DelayedVestingAccount",
+  "cosmos-sdk/PeriodicVestingAccount"
+];
+function isVestingAccountType(type) {
+  return vestingAccountTypes.indexOf(type) > -1;
+}
 var BaseAccount = /** @class */ (function() {
   function BaseAccount(address, pubKey, accountNumber, sequence, coins) {
     this.address = address;
@@ -37,47 +48,52 @@ var BaseAccount = /** @class */ (function() {
     }
     var supportedAccountType = [
       "auth/Account",
-      "auth/BaseVestingAccount",
-      "auth/ContinuousVestingAccount",
-      "auth/DelayedVestingAccount",
       "cosmos-sdk/Account",
-      "cosmos-sdk/BaseAccount",
-      "cosmos-sdk/BaseVestingAccount",
-      "cosmos-sdk/ContinuousVestingAccount",
-      "cosmos-sdk/DelayedVestingAccount"
-    ];
+      "cosmos-sdk/BaseAccount"
+    ].concat(vestingAccountTypes);
     if (supportedAccountType.indexOf(obj.type) < 0) {
       throw new Error("Unsupported account type: " + obj.type);
     }
     if (obj.value) {
-      var value = obj.value;
-      var address = address_1.AccAddress.fromBech32(value.address);
-      var coins = [];
-      if (value.coins) {
-        for (var _i = 0, _a = value.coins; _i < _a.length; _i++) {
-          var coin = _a[_i];
-          coins.push(new coin_1.Coin(coin.denom, new int_1.Int(coin.amount)));
+      var toBaseAccount = function(value) {
+        var address = address_1.AccAddress.fromBech32(value.address);
+        var coins = [];
+        if (value.coins) {
+          for (var _i = 0, _a = value.coins; _i < _a.length; _i++) {
+            var coin = _a[_i];
+            coins.push(new coin_1.Coin(coin.denom, new int_1.Int(coin.amount)));
+          }
         }
-      }
-      var pubKey = void 0;
-      if (value.public_key) {
-        if (value.public_key.type === undefined) {
-          pubKey = new crypto_1.PubKeySecp256k1(
-            buffer_1.Buffer.from(value.public_key, "base64")
-          );
-        } else if (value.public_key.type !== "tendermint/PubKeySecp256k1") {
-          throw new Error(
-            "Unsupported public key type: " + value.public_key.type
-          );
-        } else {
-          pubKey = new crypto_1.PubKeySecp256k1(
-            buffer_1.Buffer.from(value.public_key.value, "base64")
-          );
+        var pubKey;
+        if (value.public_key) {
+          if (value.public_key.type === undefined) {
+            pubKey = new crypto_1.PubKeySecp256k1(
+              buffer_1.Buffer.from(value.public_key, "base64")
+            );
+          } else if (value.public_key.type !== "tendermint/PubKeySecp256k1") {
+            throw new Error(
+              "Unsupported public key type: " + value.public_key.type
+            );
+          } else {
+            pubKey = new crypto_1.PubKeySecp256k1(
+              buffer_1.Buffer.from(value.public_key.value, "base64")
+            );
+          }
         }
+        var accountNumber = value.account_number;
+        var sequence = value.sequence;
+        return new BaseAccount(address, pubKey, accountNumber, sequence, coins);
+      };
+      if (isVestingAccountType(obj.type)) {
+        // If account is vesting account, take out the base account from it with ignoring the vesting.
+        var baseVestingAccountObj =
+          obj.value.BaseVestingAccount || obj.value.baseVestingAccount;
+        var baseAccountObj =
+          baseVestingAccountObj.BaseAccount ||
+          baseVestingAccountObj.baseAccount;
+        return toBaseAccount(baseAccountObj);
       }
-      var accountNumber = value.account_number;
-      var sequence = value.sequence;
-      return new BaseAccount(address, pubKey, accountNumber, sequence, coins);
+      return toBaseAccount(obj.value);
     } else {
       throw new Error("Invalid base account");
     }
