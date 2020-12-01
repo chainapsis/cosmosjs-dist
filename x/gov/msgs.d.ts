@@ -22,6 +22,7 @@ export declare class VoteOption {
   constructor(option: 0 | 1 | 2 | 3 | 4);
   validateBasic(): void;
   readonly option: number;
+  marshalJSON(): string;
 }
 export declare class MsgSubmitProposal extends Msg {
   title: string;

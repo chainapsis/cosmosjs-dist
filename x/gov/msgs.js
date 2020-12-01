@@ -157,6 +157,23 @@ var VoteOption = /** @class */ (function() {
     enumerable: true,
     configurable: true
   });
+  VoteOption.prototype.marshalJSON = function() {
+    var str = "";
+    switch (this._option) {
+      case 1:
+        str = "Yes";
+        break;
+      case 2:
+        str = "Abstain";
+        break;
+      case 3:
+        str = "No";
+        break;
+      case 4:
+        str = "NoWithVeto";
+    }
+    return '"' + str + '"';
+  };
   __decorate([Field.Uint8(0)], VoteOption.prototype, "_option", void 0);
   VoteOption = __decorate([DefineType()], VoteOption);
   return VoteOption;
