@@ -88,9 +88,14 @@ var BaseAccount = /** @class */ (function() {
         // If account is vesting account, take out the base account from it with ignoring the vesting.
         var baseVestingAccountObj =
           obj.value.BaseVestingAccount || obj.value.baseVestingAccount;
-        var baseAccountObj =
-          baseVestingAccountObj.BaseAccount ||
-          baseVestingAccountObj.baseAccount;
+        var baseAccountObj = void 0;
+        if (baseVestingAccountObj) {
+          baseAccountObj =
+            baseVestingAccountObj.BaseAccount ||
+            baseVestingAccountObj.baseAccount;
+        } else {
+          baseAccountObj = obj.value;
+        }
         return toBaseAccount(baseAccountObj);
       }
       return toBaseAccount(obj.value);
