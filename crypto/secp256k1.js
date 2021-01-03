@@ -67,7 +67,9 @@ var PrivKeySecp256k1 = /** @class */ (function() {
     var signature = key.sign(buffer_1.Buffer.from(hash, "hex"), {
       canonical: true
     });
-    return new Uint8Array(signature.r.toArray().concat(signature.s.toArray()));
+    return new Uint8Array(
+      signature.r.toArray("be", 32).concat(signature.s.toArray("be", 32))
+    );
   };
   PrivKeySecp256k1.prototype.toString = function() {
     return buffer_1.Buffer.from(this.privKey).toString("hex");
